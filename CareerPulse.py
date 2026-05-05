@@ -133,7 +133,7 @@ def extract_text_from_cv(cv_file) -> str:
 # ============================================
 # NAVIGATION
 # ============================================
-tabs = ["🏠 Home", "🔎 Prediction", "📊 Analysis"]
+tabs = ["🏠 Home", "🔎 Prediction", "📊 Analysis", "ℹ️ About"]
 current_index = tabs.index(st.session_state.active_tab)
 
 selected_tab = st.radio("Nav", tabs, index=current_index, horizontal=True, label_visibility="collapsed")
@@ -261,3 +261,21 @@ elif selected_tab == "📊 Analysis":
             st.session_state.processed = False
             st.session_state.active_tab = "🏠 Home"
             st.rerun()
+
+elif selected_tab == "ℹ️ About":
+    st.markdown(
+        """<div style="text-align: justify;">
+        <h2>Abstract</h2>
+
+<h4>Background</h4>
+In today’s highly competitive job market, graduating students often struggle to quantify their market value and identify specific gaps in their professional profiles. Traditional career counseling frequently lacks the data-driven precision required to analyze diverse datasets such as academic transcripts, technical certifications, and open-source contributions. As the recruitment landscape shifts toward skill-based hiring, there is a critical need for an automated system that can objectively evaluate a candidate's readiness and provide actionable, predictive insights to ensure successful placement outcomes.
+</br>
+<h4>Objectives</h4>
+The primary objective of this project is to develop "CareerPulse," an AI-driven Career Architect designed to bridge the gap between academic preparation and professional employment. The study aims to implement a predictive framework that calculates a multidimensional "Employability Readiness Score" by synthesizing academic performance, technical expertise, and extracurricular involvement. Specifically, the system seeks to provide students with transparent, data-backed placement predictions and personalized roadmaps to enhance their professional standing before entering the job market.
+</br>
+<h4>Methods</h4>
+This study utilized a multi-stage machine learning pipeline developed in Python and deployed via the Streamlit framework. The architecture employs advanced text extraction modules to ingest and parse unstructured data from resumes (PDFs) and academic profiles. To provide a holistic evaluation, the system integrates GitHub API data to assess technical proficiency alongside traditional metrics like CGPA and certifications. Using a combination of statistical modeling and classification algorithms, CareerPulse analyzes these features to generate an accuracy-driven placement probability. The final output provides a comprehensive readiness dashboard, offering users real-time feedback and AI-generated suggestions for profile optimization.
+    </div>
+    </br>""",
+        unsafe_allow_html=True,
+    )
