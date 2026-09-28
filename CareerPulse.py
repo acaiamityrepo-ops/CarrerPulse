@@ -31,7 +31,7 @@ bus_pipe, bus_meta = load_pipeline("artifacts_business")
 # SAMPLE DATA (files in the Test folder)
 # ============================================
 SAMPLE_DIR = "Test"
-SAMPLE_EXTS = (".pdf", ".png", ".jpg", ".jpeg")
+SAMPLE_EXTS = (".pdf")
 
 def list_sample_files():
     if not os.path.isdir(SAMPLE_DIR):
@@ -217,12 +217,12 @@ elif selected_tab == "🔎 Prediction":
         cv_label = ""
 
         if input_source == UPLOAD_OPT:
-            cv_source = st.file_uploader("Upload CV (PDF or Image)", type=["pdf", "png", "jpg"])
+            cv_source = st.file_uploader("Upload CV (PDF only)", type=["pdf"])
             cv_label = "Uploaded CV"
         else:
             sample_files = list_sample_files()
             if not sample_files:
-                st.warning(f"No sample PDFs or images found in the '{SAMPLE_DIR}' folder.")
+                st.warning(f"No sample PDF found in the '{SAMPLE_DIR}' folder.")
             else:
                 chosen = st.selectbox("Select a sample CV", sample_files)
                 cv_source = os.path.join(SAMPLE_DIR, chosen)
