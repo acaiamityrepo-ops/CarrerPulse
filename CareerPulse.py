@@ -9,6 +9,7 @@ import pdfplumber
 from PIL import Image
 import pytesseract
 import base64
+import os
 
 # ============================================
 # CONFIGURATION & MODEL LOADING
@@ -25,6 +26,17 @@ def load_pipeline(folder):
 
 eng_pipe, eng_meta = load_pipeline("artifacts_engineering")
 bus_pipe, bus_meta = load_pipeline("artifacts_business")
+
+# ============================================
+# SAMPLE DATA (files in the Test folder)
+# ============================================
+SAMPLE_DIR = "Test"
+SAMPLE_EXTS = (".pdf", ".png", ".jpg", ".jpeg")
+
+def list_sample_files():
+    if not os.path.isdir(SAMPLE_DIR):
+        return []
+    return sorted(f for f in os.listdir(SAMPLE_DIR) if f.lower().endswith(SAMPLE_EXTS))
 
 # ============================================
 # PAGE CONFIG & CSS
@@ -121,8 +133,11 @@ def detect_skills(text_l: str) -> list:
     return sorted(list(set(found)))
 
 def extract_text_from_cv(cv_file) -> str:
+    """Accepts a Streamlit UploadedFile or a file path (str)."""
+    name = cv_file if isinstance(cv_file, str) else cv_file.name
+    ext = os.path.splitext(name)[1].lower()
     text = ""
-    if cv_file.type == "application/pdf":
+    if ext == ".pdf":
         with pdfplumber.open(cv_file) as pdf:
             for page in pdf.pages[:5]:
                 text += (page.extract_text() or "") + "\n"
@@ -187,33 +202,66 @@ elif selected_tab == "🔎 Prediction":
 
     with col_r:
         st.subheader("2. Portfolio & CV")
-        cv_file = st.file_uploader("Upload CV (PDF or Image)", type=["pdf", "png", "jpg"])
+
+        UPLOAD_OPT = "📤 Upload my own"
+        SAMPLE_OPT = "📄 Use sample from Test folder"
+
+        input_source = st.radio(
+            "Choose input source",
+            [UPLOAD_OPT, SAMPLE_OPT],
+            horizontal=True,
+            key="input_source",
+        )
+
+        cv_source = None       # UploadedFile or path string
+        cv_label = ""
+
+        if input_source == UPLOAD_OPT:
+            cv_source = st.file_uploader("Upload CV (PDF or Image)", type=["pdf", "png", "jpg"])
+            cv_label = "Uploaded CV"
+        else:
+            sample_files = list_sample_files()
+            if not sample_files:
+                st.warning(f"No sample PDFs or images found in the '{SAMPLE_DIR}' folder.")
+            else:
+                chosen = st.selectbox("Select a sample CV", sample_files)
+                cv_source = os.path.join(SAMPLE_DIR, chosen)
+                cv_label = f"Sample: {chosen}"
+
+                if chosen.lower().endswith(".pdf"):
+                    with open(cv_source, "rb") as f:
+                        st.download_button("Download this sample", f.read(), file_name=chosen, mime="application/pdf")
+                else:
+                    st.image(cv_source, caption=chosen, use_container_width=True)
+
         github_url = st.text_input("GitHub URL")
-        
+
         if st.button("Analyze My Career Profile", use_container_width=True):
-            with st.spinner("Processing data..."):
-                # Extract Skills
-                skills = []
-                if cv_file:
-                    raw_text = extract_text_from_cv(cv_file)
+            if cv_source is None:
+                st.warning("Please upload a CV or select a sample file.")
+            else:
+                with st.spinner("Processing data..."):
+                    # Extract Skills
+                    raw_text = extract_text_from_cv(cv_source)
                     skills = detect_skills(raw_text.lower())
-                
-                # Mock Probability Logic (Replace with eng_pipe.predict_proba if artifacts loaded)
-                prob = 0.85 if cgpa > 7.5 else 0.45
-                
-                # Calculate Readiness
-                readiness = min((cgpa * 5) + (len(skills) * 8), 100)
-                
-                # Store in session
-                st.session_state.results = {
-                    "prob": prob,
-                    "readiness": readiness,
-                    "skills": skills,
-                    "stream": stream
-                }
-                st.session_state.processed = True
-                st.session_state.active_tab = "📊 Analysis"
-                st.rerun()
+                    
+                    # Mock Probability Logic (Replace with eng_pipe.predict_proba if artifacts loaded)
+                    prob = 0.85 if cgpa > 7.5 else 0.45
+                    
+                    # Calculate Readiness
+                    readiness = min((cgpa * 5) + (len(skills) * 8), 100)
+                    
+                    # Store in session
+                    st.session_state.results = {
+                        "prob": prob,
+                        "readiness": readiness,
+                        "skills": skills,
+                        "stream": stream,
+                        "source": cv_label,
+                    }
+                    st.session_state.processed = True
+                    st.session_state.active_tab = "📊 Analysis"
+                    st.rerun()
 
 # ============================================
 # PAGE 2: PREDICTION (Results & Insights)
@@ -224,6 +272,7 @@ elif selected_tab == "📊 Analysis":
     else:
         res = st.session_state.results
         st.markdown(f"## Analysis for {res['stream']} Profile")
+        st.caption(f"Input source: {res.get('source', 'Uploaded CV')}")
         
         c1, c2 = st.columns(2)
         
